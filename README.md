@@ -1,11 +1,12 @@
-# J WALK Shop 26 · محل 26
+# J BAO · Shop 26 · J WALK
 
-Interactive 3D model of Shop 26, ground floor, J WALK (Al-Jammawat Park, Madinah).
+Interactive, walkable 3D model of Shop 26 at J WALK (Al-Jammawat Park, Madinah), fitted out as a J BAO showroom.
 
-**View it:** https://suhaib-m-nur.github.io/jwalk-shop-26/
+**Open it:** https://suhaib-m-nur.github.io/jwalk-shop-26/
 
-- 120 m² on the plan; curved glass shopfront 10.48 m that wraps around the left corner (3.10 m glass side), two double glass doors, depth 10.24 m, clear ceiling height 4.00 m
-- Views: overview, shopfront, inside and plan; empty shell (exposed services) or J BAO showroom; dimensions, neighbouring rooms and opening doors
-- Geometry from the shop's DWG with the updated plan's changes (wall fin removed, second door, glass corner, back-wall windows). Glazing height, sign band, walkway soffit and window heights are estimates; the showroom fit-out is illustrative.
+- **Walk around:** press "Walk around the store", then use W A S D or the arrow keys and drag to look (on phones, the on-screen stick).
+- **Two modes:** the J BAO showroom, or the unit as it is now (bare shell, exposed services, shutters as in the site photo).
+- **Plan:** the 120 m² sales floor, back-wall windows and columns come from the shop's DWG. The glass display room (7.5 m²) and the black shopfront (two openings, about 3.80 m and 2.60 m) follow the site photo.
+- **Fit-out:** the vibe follows the Blueage store at Red Sea Mall: oak shelving, black steel rails and bust stands, terrazzo floor and white track lighting on a charcoal exposed ceiling. The bust stand and garment models, plus the terrazzo and oak textures, were generated with Higgsfield.
 
-A single self-contained `index.html` (three.js and fonts load from public CDNs).
+A single self-contained `index.html`; three.js loads from a public CDN.
