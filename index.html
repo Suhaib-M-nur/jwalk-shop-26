@@ -488,6 +488,14 @@ button { font: inherit; color: inherit; }
   }, 0);
 
   // ---- materials ----------------------------------------------------------------------
+  // printed logo for the security gates: J3ao over جي باو, on a clear background
+  const gateTex = canvasTex(512, 640, () => {}, 0);
+  function drawGateDecal() {
+    const c = gateTex.image.getContext("2d"), w = 512, h = 640; c.clearRect(0, 0, w, h);
+    if (jbao.orange) { const lw = w * 0.86, lh = lw * jbao.orange.height / jbao.orange.width; c.drawImage(jbao.orange, (w - lw) / 2, h * 0.2, lw, lh); }
+    c.fillStyle = "#ff5e26"; c.textAlign = "center"; c.textBaseline = "middle"; c.direction = "rtl"; c.font = "800 140px Almarai, sans-serif"; c.fillText("جي باو", w / 2, h * 0.7);
+    gateTex.needsUpdate = true;
+  }
   const lit = (hex, k) => new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(k || 1), toneMapped: false, side: THREE.DoubleSide });
   const M = {
     wall: new THREE.MeshStandardMaterial({ map: plasterWall, bumpMap: plasterWallBump, bumpScale: 0.004, color: 0xf3f0eb, roughness: 0.93 }),
@@ -516,7 +524,8 @@ button { font: inherit; color: inherit; }
     soffit: new THREE.MeshStandardMaterial({ color: 0xf7f6f3, roughness: 0.9, side: THREE.DoubleSide }),
     ctxWall: new THREE.MeshStandardMaterial({ color: 0xe6e3dd, roughness: 0.95, side: THREE.DoubleSide, transparent: true, opacity: 0.55, depthWrite: false }),
     ground: new THREE.MeshStandardMaterial({ color: 0xdcd8d0, roughness: 1 }),
-    fluted: new THREE.MeshStandardMaterial({ color: 0xfaf7f2, roughness: 0.6, side: THREE.DoubleSide, emissive: 0xf5efe6, emissiveIntensity: 0.12 }),   // warm white painted flutes
+    flutedOak: new THREE.MeshStandardMaterial({ map: oakTex, color: 0xe2d8cb, roughness: 0.55, side: THREE.DoubleSide }),   // same oak as the cashier desk   // warm white painted flutes
+    gateDecal: new THREE.MeshStandardMaterial({ map: gateTex, alphaTest: 0.4, roughness: 0.35, side: THREE.FrontSide }),
     mirror: new THREE.MeshStandardMaterial({ color: 0xdfe6e8, metalness: 1, roughness: 0.03 }),
     blackGlass: new THREE.MeshStandardMaterial({ color: 0x0b0b0c, metalness: 0.6, roughness: 0.06 }),
     screen: new THREE.MeshStandardMaterial({ color: 0x141518, roughness: 0.35, metalness: 0.2 }),
@@ -864,26 +873,25 @@ button { font: inherit; color: inherit; }
   const wallSignTex = { face: canvasTex(2048, 460, () => {}, 0), side: canvasTex(2048, 460, () => {}, 0), halo: canvasTex(1024, 230, () => {}, 0), shadow: canvasTex(1024, 230, () => {}, 0) };
   // vertical half-round flutes, fw wide and standing depth proud of radius r; each flute keeps its own edge vertices so the grooves stay crisp
   function flutedWall(r, a0, a1, y0, y1, fw, depth, mat) {
-    const len = (a1 - a0) * Math.PI / 180 * r, n = Math.round(len / fw), seg = 6, pos = [], idx = [];
+    const len = (a1 - a0) * Math.PI / 180 * r, n = Math.round(len / fw), seg = 6, pos = [], uv = [], idx = [];
     for (let f = 0; f < n; f++) for (let j = 0; j <= seg; j++) {
       const u = (f + j / seg) / n, th = a1 + (a0 - a1) * u, [x, z] = P(r - Math.sin(Math.PI * j / seg) * depth, th);
-      pos.push(x, y0, z, x, y1, z);
+      pos.push(x, y0, z, x, y1, z); uv.push(u * len, y0, u * len, y1);
       if (j) { const a = (f * (seg + 1) + j - 1) * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
     }
-    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
     const m = new THREE.Mesh(g, mat); m.receiveShadow = true; m.castShadow = true; return m;
   }
   function walnutWall() {
-    furn.add(sector(WAL_R, RB - 0.004, WAL[0], WAL[1], 0, H, M.bulkhead));
-    furn.add(flutedWall(WAL_R, WAL[0], WAL[1], 0.1, H - 0.02, 0.045, 0.014, M.fluted));
-    furn.add(sector(WAL_R + 0.02, WAL_R, WAL[0], WAL[1], 0, 0.1, M.metal, { noCast: true }));   // shadow-gap kick
+    furn.add(sector(WAL_R, RB - 0.004, WAL[0], WAL[1], 0, H, M.oak));
+    furn.add(flutedWall(WAL_R, WAL[0], WAL[1], 0.0, H - 0.02, 0.045, 0.014, M.flutedOak));
     // light line along the top of the panels
     furn.add(new THREE.Mesh(strip(arcPts(WAL_R - 0.004, WAL[1], WAL[0], 0.25), H - 0.03, H - 0.006), M.led));
     // channel letters: lit faces, returns stacked behind them, their soft shadow and glow on the flutes
     const sw = 4.0, sh = sw * 460 / 2048, y0 = 2.18, dth = sw / WAL_R * 180 / Math.PI / 2;
     const layer = (r, tex, opts) => { const m = new THREE.Mesh(strip(arcPts(r, WAL_MID + dth, WAL_MID - dth, 0.2), y0, y0 + sh, 0), new THREE.MeshBasicMaterial(Object.assign({ map: tex, transparent: true, toneMapped: false, depthWrite: false, side: THREE.DoubleSide }, opts))); furn.add(m); return m; };
-    layer(WAL_R - 0.016, wallSignTex.shadow, { opacity: 0.32 }).position.y = -0.045;
-    layer(WAL_R - 0.017, wallSignTex.halo, { blending: THREE.AdditiveBlending, opacity: 0.3 });
+    layer(WAL_R - 0.016, wallSignTex.shadow, { opacity: 0.22 }).position.y = -0.045;
+    layer(WAL_R - 0.017, wallSignTex.halo, { blending: THREE.AdditiveBlending, opacity: 0.85 });
     for (let k = 1; k <= 5; k++) layer(WAL_R - 0.018 - k * 0.011, wallSignTex.side, {}).renderOrder = 6;
     layer(WAL_R - 0.078, wallSignTex.face, {}).renderOrder = 7;
     // backlit shelf behind the counter
@@ -898,8 +906,8 @@ button { font: inherit; color: inherit; }
     drawLogoPair(wallSignTex.side.image, "dark", 0); wallSignTex.side.needsUpdate = true;
     const hc = wallSignTex.halo.image, c = hc.getContext("2d"), tmp = document.createElement("canvas"); tmp.width = hc.width; tmp.height = hc.height;
     drawLogoPair(tmp, "orange", 0);
-    c.clearRect(0, 0, hc.width, hc.height); c.globalAlpha = 0.5;
-    c.shadowColor = "rgba(255,110,40,1)"; c.shadowBlur = 28; c.shadowOffsetX = hc.width * 2;
+    c.clearRect(0, 0, hc.width, hc.height); c.globalAlpha = 0.55;
+    c.shadowColor = "rgba(255,236,205,1)"; c.shadowBlur = 22; c.shadowOffsetX = hc.width * 2;
     for (let k = 0; k < 3; k++) c.drawImage(tmp, -hc.width * 2, 0);
     wallSignTex.halo.needsUpdate = true;
     const sc = wallSignTex.shadow.image.getContext("2d"); sc.clearRect(0, 0, hc.width, hc.height);
@@ -1006,12 +1014,14 @@ button { font: inherit; color: inherit; }
     });
     // two-tier tables facing the two openings
     [[1.9, 2.85, 1.6], [-3.05, 2.45, 1.5]].forEach(([x, z, len]) => { place(table2(len), x, z, 0, 1); blockAlong(x, z, 1, 0, len - 0.2, 0.45); });
-    // security gates: clear acrylic panels on white bases, inside both openings
+    // security gates in J BAO colours: orange base, edges and cap around clear acrylic printed with the logo
     [OPEN_R, OPEN_L].forEach(([a, b]) => [a + DEG(0.35), b - DEG(0.35)].forEach(th => {
       const [x, z] = P(RF + 0.75, th), g = new THREE.Group();
-      put(g, box(0.1, 0.08, 0.44, M.coat), 0, 0.04, 0);
-      const pnl = put(g, new THREE.Mesh(new THREE.BoxGeometry(0.03, 1.42, 0.4), M.acrylic), 0, 0.79, 0); pnl.renderOrder = 3;
-      put(g, box(0.05, 0.03, 0.42, M.coat), 0, 1.515, 0);
+      put(g, box(0.11, 0.08, 0.46, M.orange), 0, 0.04, 0);
+      const pnl = put(g, new THREE.Mesh(new THREE.BoxGeometry(0.024, 1.4, 0.36), M.acrylic), 0, 0.79, 0); pnl.renderOrder = 3;
+      [-0.19, 0.19].forEach(dz => put(g, box(0.04, 1.44, 0.025, M.orange), 0, 0.8, dz));
+      put(g, box(0.05, 0.035, 0.42, M.orange), 0, 1.53, 0);
+      [1, -1].forEach(sd => { const d = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.425), M.gateDecal); d.position.set(sd * 0.0135, 1.02, 0); d.rotation.y = sd * Math.PI / 2; g.add(d); });
       place(g, x, z, RING.x - x, RING.y - z); blockers.push([x, z, 0.22]);
     }));
   }
@@ -1324,7 +1334,7 @@ button { font: inherit; color: inherit; }
     : Promise.resolve();
   const graphicsReady = Promise.all([fontsReady, jbaoReady, posterReady]).then(() => {
     drawLogoPair(signTex.image, "orange", 26); signTex.needsUpdate = true;
-    drawWallSign(); drawPosters(); drawFitSign(fitSignTex.image.getContext("2d"), 900, 240); fitSignTex.needsUpdate = true;
+    drawWallSign(); drawPosters(); drawGateDecal(); drawFitSign(fitSignTex.image.getContext("2d"), 900, 240); fitSignTex.needsUpdate = true;
   });
   const stoneReady = new Promise(res => { if (stoneImg.complete && stoneImg.naturalWidth) res(); else { stoneImg.addEventListener("load", res); stoneImg.addEventListener("error", res); } });
   Promise.all([parseGLB(ASSET.garment), parseGLB(ASSET.manA), parseGLB(ASSET.manB), parseGLB(ASSET.stack), graphicsReady, stoneReady]).then(([garmentScene, manAScene, manBScene, stackScene]) => {
